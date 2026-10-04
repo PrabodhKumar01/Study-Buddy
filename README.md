@@ -1,306 +1,442 @@
-# 🎓 Study Buddy - Local AI Study Assistant
+# 📚 Study Buddy
 
-An open-source, beginner-friendly academic study assistant built with **FastAPI**, **Local Open-Weight LLMs (Ollama)**, and **Retrieval-Augmented Generation (RAG)** for **Hacktoberfest 2026**.
+> **A local AI-powered study assistant that helps students understand their study materials using open-weight AI and Retrieval-Augmented Generation (RAG).**
 
-Upload your study materials (such as lecture notes, textbook chapters, or research papers in PDF format) and ask questions. Study Buddy extracts the text, stores chunk embeddings in a simple local vector store, and uses a locally running AI model to generate grounded answers with document citations.
-
----
-
-## 💡 The Problem Being Solved
-
-Students and researchers often deal with dense, multi-page PDFs. Generic cloud AI chatbots present major downsides:
-1. **Hallucinations:** Standard models often fabricate facts without referencing actual course materials.
-2. **Privacy Concerns:** Uploading sensitive research, thesis drafts, or unpublished course slides to third-party cloud APIs poses privacy risks.
-3. **API Costs & Rate Limits:** Cloud LLM tokens cost money and require ongoing subscription fees.
-
-**Study Buddy** solves this by running **100% locally on your computer**:
-- Your study notes never leave your laptop.
-- Answers are strictly grounded in your uploaded documents.
-- Every response provides source citations (document name, page number, and relevant excerpt).
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Ollama](https://img.shields.io/badge/Ollama-Local%20LLM-black?logo=ollama)](https://ollama.com/)
+[![RAG](https://img.shields.io/badge/AI-RAG-orange)](#how-rag-works)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
 
-## 🌟 Key Features
+## 📌 About the Project
 
-- 📄 **PDF Upload & Extraction:** Upload PDFs via API or web UI; text is cleanly extracted page-by-page.
-- ✂️ **Smart Text Chunking:** Text is split into overlapping chunks with preserved document and page metadata.
-- 🔢 **Zero-Cloud Embeddings:** Computes vector representations using open-source models via Ollama (with built-in local fallback).
-- 💾 **Lightweight Local Vector Store:** Stores chunks and vectors in a transparent `data/vector_store.json` using NumPy cosine similarity—no external vector databases required.
-- 🦙 **Local Open-Weight LLM:** Connects to models like **Llama 3**, **Mistral**, or **Phi-3** running locally through Ollama.
-- 📑 **Source Citations:** Every answer links back to the exact document, page number, and text snippet used.
-- 🛡️ **Anti-Hallucination Prompting:** If information is not in the uploaded documents, the assistant clearly states it cannot find the answer rather than making things up.
-- 🖥️ **Interactive Web Interface:** Single-page frontend to upload files, view document status, ask questions, and read cited answers.
+**Study Buddy** is a local AI study assistant designed to help students learn from their own study materials.
 
----
+Instead of asking an AI model to answer questions using only its general knowledge, Study Buddy allows students to upload their study materials, such as PDF notes, and ask questions about them.
 
-## 🏗️ Architecture & How RAG Works
+The application uses **Retrieval-Augmented Generation (RAG)** to retrieve relevant information from the uploaded documents and provide that information to a local **open-weight language model** before generating an answer.
 
-```
-                                  +-------------------+
-                                  |   Study Material  |
-                                  |       (PDF)       |
-                                  +---------+---------+
-                                            |
-                                            v
-                                  +---------+---------+
-                                  |    PDF Loader     | (app/utils/pdf_loader.py)
-                                  | (pypdf Extraction)|
-                                  +---------+---------+
-                                            |
-                                            v
-                                  +---------+---------+
-                                  |   Text Chunker    |
-                                  |  (600 chars/page) |
-                                  +---------+---------+
-                                            |
-                                            v
-                                  +---------+---------+
-                                  | Embedding Service | (Ollama / Local Fallback)
-                                  +---------+---------+
-                                            |
-                                            v
-                                  +---------+---------+
-                                  | Local Vector Store| (data/vector_store.json)
-                                  +---------+---------+
-                                            |
-=========================================== | ============================================
-                                  RAG QUERY PIPELINE
-=========================================== | ============================================
-                                            |
-  +------------------+                      |
-  |  User Question   |                      |
-  +--------+---------+                      |
-           |                                |
-           v                                |
-  +--------+---------+                      |
-  | Query Embedding  |                      |
-  +--------+---------+                      |
-           |                                |
-           v                                v
-  +--------+--------------------------------+---------+
-  |    Cosine Similarity Search in Vector Store       |
-  |            (Top Relevant Chunks)                  |
-  +--------------------+------------------------------+
-                       |
-                       v
-  +--------------------+------------------------------+
-  |     Augmented Prompt Assembly with Context        |
-  |  "Answer strictly based on Context excerpts..."   |
-  +--------------------+------------------------------+
-                       |
-                       v
-  +--------------------+------------------------------+
-  |               Local Open-Weight LLM               | (Ollama: Llama 3)
-  +--------------------+------------------------------+
-                       |
-                       v
-  +--------------------+------------------------------+
-  |            Answer + Document Citations            |
-  +---------------------------------------------------+
+### Example
+
+A student uploads:
+
+```text
+Operating Systems Notes.pdf
+DBMS Notes.pdf
+DSA Notes.pdf
 ```
 
----
+Then asks:
 
-## 🛠️ Technologies Used
+> "What are the four necessary conditions for deadlock?"
 
-| Technology | Purpose |
-| :--- | :--- |
-| **Python 3.10+** | Programming language |
-| **FastAPI** | High-performance, async web framework |
-| **Uvicorn** | ASGI web server |
-| **Pydantic** | Request/response data validation |
-| **pypdf** | PDF document parsing and text extraction |
-| **NumPy** | Vector operations and cosine similarity computation |
-| **Ollama** | Local runtime for open-weight LLMs and embeddings |
-| **HTML5 / CSS3 / Vanilla JS** | Lightweight, responsive web frontend |
-| **Pytest** | Automated test suite |
+Study Buddy searches the uploaded material, retrieves the relevant section, and gives the retrieved context to the local AI model to generate the answer.
 
 ---
 
-## 🚀 Quickstart Guide
+# 🎯 Problem
 
-### Option 1: One-Click Launch (100% Offline Mode)
+Students often have their study material spread across multiple PDFs and documents.
 
-If you downloaded or cloned this project to your laptop, you can start everything with a single click:
+Finding a specific concept can require manually searching through large documents.
 
-- **Windows:** Double-click [`run.bat`](file:///d:/Python%20Projects/studyBuddy/run.bat) (or run `.\run.bat` in your terminal).
-- **macOS / Linux:** Run `./run.sh` in your terminal.
+Study Buddy aims to make this easier by allowing students to:
 
-These scripts automatically check Python, create your virtual environment, install requirements, and open Study Buddy in your default browser at `http://127.0.0.1:8000`!
+- Upload their study material
+- Ask questions in natural language
+- Find relevant information automatically
+- Get AI-generated explanations based on their own material
+- Keep their documents and AI processing local
 
 ---
 
-### Option 2: Manual Setup
+# ✨ Features
+
+- 📄 **PDF Upload** — Upload study materials in PDF format.
+- 📝 **Text Extraction** — Extract text from uploaded documents.
+- ✂️ **Text Chunking** — Split documents into smaller searchable sections.
+- 🧠 **Embeddings** — Convert text into numerical representations.
+- 🔎 **Semantic Search** — Find relevant sections based on meaning rather than exact keywords.
+- 📚 **RAG** — Retrieve relevant study material before generating an answer.
+- 🤖 **Local LLM** — Use an open-weight language model locally through Ollama.
+- 🔐 **Privacy** — Study materials can remain on the user's machine instead of being sent to a third-party AI provider.
+- 🔗 **Source Information** — Return information about the documents used to answer a question.
+- ⚡ **FastAPI Backend** — REST API for document processing and question answering.
+- 🖥️ **Simple UI** — Upload documents and ask questions through a simple interface.
+
+---
+
+# 🧠 How It Works
+
+The complete pipeline looks like this:
+
+```mermaid
+flowchart TD
+
+    A[📄 Study PDF] --> B[PDF Text Extraction]
+
+    B --> C[Text Chunking]
+
+    C --> D[Embedding Model]
+
+    D --> E[(Vector Store)]
+
+    F[👤 User Question] --> G[Query Embedding]
+
+    G --> E
+
+    E --> H[Relevant Document Chunks]
+
+    H --> I[Context + Question]
+
+    I --> J[🤖 Local Open-Weight LLM]
+
+    J --> K[💬 Generated Answer]
+
+    H --> L[📚 Source Information]
+
+    K --> M[Study Buddy UI]
+    L --> M
+```
+
+---
+
+# 🔍 How RAG Works
+
+Study Buddy uses **Retrieval-Augmented Generation (RAG)**.
+
+Instead of:
+
+```text
+User Question
+      ↓
+     LLM
+      ↓
+   Answer
+```
+
+Study Buddy uses:
+
+```text
+User Question
+      ↓
+Create Query Embedding
+      ↓
+Search Vector Store
+      ↓
+Retrieve Relevant Chunks
+      ↓
+Send Context + Question to LLM
+      ↓
+Generate Answer
+```
+
+### Why RAG?
+
+A general-purpose LLM may not know the contents of a student's personal notes.
+
+RAG allows Study Buddy to retrieve relevant information from the user's own documents before generating the response.
+
+This makes the response more relevant to the student's material.
+
+---
+
+# 🧩 Core Concepts
+
+## 1. LLM
+
+**LLM = Large Language Model**
+
+The language model is responsible for generating the final response.
+
+Study Buddy uses a locally running open-weight model instead of depending entirely on a closed cloud AI API.
+
+---
+
+## 2. Open-Weight Model
+
+An open-weight model makes its trained model weights available for users to download and run, subject to the model's license.
+
+This allows Study Buddy to run AI inference locally.
+
+---
+
+## 3. Embeddings
+
+Embeddings convert text into numerical vectors that represent semantic information.
+
+For example:
+
+```text
+"What is deadlock?"
+        ↓
+Embedding Model
+        ↓
+[0.12, -0.42, 0.73, ...]
+```
+
+This allows Study Buddy to search for text that is **semantically similar** to a question.
+
+---
+
+## 4. Vector Store
+
+Document embeddings are stored locally in a vector store.
+
+When the user asks a question, the question is converted into an embedding and compared with stored document embeddings.
+
+The most relevant chunks are retrieved.
+
+---
+
+## 5. Local Inference
+
+The LLM runs locally instead of requiring every question to be sent to an external AI service.
+
+The basic flow is:
+
+```text
+Study Buddy
+     ↓
+Ollama
+     ↓
+Local Open-Weight Model
+     ↓
+Response
+```
+
+---
+
+# 🛠️ Tech Stack
+
+### Backend
+
+[![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+
+- **Python** — Main programming language
+- **FastAPI** — Backend API framework
+
+### AI / ML
+
+[![Ollama](https://img.shields.io/badge/Ollama-black?logo=ollama)](https://ollama.com/)
+[![Hugging Face](https://img.shields.io/badge/Hugging%20Face-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/)
+
+- **Open-weight LLM** — Generates responses
+- **Ollama** — Runs the LLM locally
+- **Embedding Model** — Converts text into vectors
+- **RAG** — Retrieves relevant context before generation
+
+### Document Processing
+
+- PDF text extraction
+- Text chunking
+- Document metadata handling
+
+### Storage
+
+- Local vector store
+- Local document storage
+
+---
+
+# 🏗️ Project Structure
+
+```text
+study-buddy/
+│
+├── app/
+│   ├── main.py
+│   │
+│   ├── routes/
+│   │   ├── documents.py
+│   │   └── chat.py
+│   │
+│   ├── services/
+│   │   ├── llm.py
+│   │   ├── embeddings.py
+│   │   └── rag.py
+│   │
+│   └── utils/
+│       └── pdf_loader.py
+│
+├── documents/
+│   └── .gitkeep
+│
+├── data/
+│   └── .gitkeep
+│
+├── tests/
+│
+├── requirements.txt
+├── .env.example
+├── .gitignore
+├── README.md
+└── LICENSE
+```
+
+---
+
+# 🔄 Application Flow
+
+### Document Upload
+
+```text
+User
+ ↓
+Upload PDF
+ ↓
+FastAPI
+ ↓
+PDF Text Extraction
+ ↓
+Text Chunking
+ ↓
+Embedding Model
+ ↓
+Vector Store
+```
+
+### Question Answering
+
+```text
+User Question
+ ↓
+FastAPI
+ ↓
+Query Embedding
+ ↓
+Vector Search
+ ↓
+Relevant Chunks
+ ↓
+Local LLM
+ ↓
+Answer + Sources
+ ↓
+User
+```
+
+---
+
+# 🚀 Getting Started
+
+## Prerequisites
+
+Make sure you have:
+
+- Python 3.10+
+- Git
+- Ollama
+- An open-weight model supported by your local setup
+
+---
+
+## 1. Clone the Repository
 
 ```bash
-# 1. Clone or download the repository
-git clone https://github.com/your-username/study-buddy.git
+git clone https://github.com/YOUR_USERNAME/study-buddy.git
+
 cd study-buddy
+```
 
-# 2. Create a virtual environment
-python -m venv venv
+Replace `YOUR_USERNAME` with your GitHub username.
 
-# 3. Activate virtual environment
-# Windows (PowerShell):
-.\venv\Scripts\Activate.ps1
-# macOS / Linux:
-source venv/bin/activate
+---
 
-# 4. Install dependencies
+## 2. Create a Virtual Environment
+
+### Linux / macOS
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### Windows
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+---
+
+## 3. Install Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
 ---
 
-## ☁️ Deploying to Vercel (Web Access for Others)
+## 4. Install and Run Ollama
 
-You can deploy Study Buddy to Vercel so anyone can use it online without installing anything on their computer!
+Install Ollama from:
 
-### Steps to Deploy on Vercel:
+https://ollama.com/
 
-1. **Push your code to GitHub:**
-   ```bash
-   git add .
-   git commit -m "Add Vercel deployment and offline bundles"
-   git push origin main
-   ```
-2. **Import into Vercel:**
-   - Go to [vercel.com](https://vercel.com) and click **"Add New Project"**.
-   - Select your GitHub repository.
-   - Vercel automatically detects [`vercel.json`](file:///d:/Python%20Projects/studyBuddy/vercel.json) and [`api/index.py`](file:///d:/Python%20Projects/studyBuddy/api/index.py).
-3. **Configure Environment Variables in Vercel:**
-   In your Vercel Project Settings under **Environment Variables**, add:
-   - `GROQ_API_KEY`: *(Recommended free key from [console.groq.com](https://console.groq.com) for ultra-fast Llama 3 cloud inference)*
-   *(Optional)*: If you prefer OpenAI, set `OPENAI_API_KEY`.
-4. **Deploy!**
-   - Click **Deploy**. Vercel will build the serverless functions and give you a live HTTPS URL (e.g. `https://your-study-buddy.vercel.app`).
-   - Users can visit the link, upload PDFs, and query their materials in their browser!
+Then download an appropriate open-weight model:
 
+```bash
+ollama pull <MODEL_NAME>
+```
+
+Run Ollama:
+
+```bash
+ollama serve
+```
+
+The exact model depends on your available RAM/VRAM and the model selected for the project.
 
 ---
 
-## 🦙 Setting Up the Local LLM (Ollama)
+# ▶️ Running the Application
 
-Study Buddy uses **Ollama** to run open-weight AI models locally on your CPU or GPU.
+### Option A: One-Click Launch (100% Offline Mode)
 
-### 1. Install Ollama
-- **Windows / macOS / Linux:** Download the installer from [https://ollama.com/download](https://ollama.com/download).
+- **Windows:** Double-click `run.bat` (or run `.\run.bat` in your terminal).
+- **macOS / Linux:** Run `./run.sh` in your terminal.
 
-### 2. Download Recommended Models
-Open your terminal and pull your preferred models:
+These scripts automatically configure the virtual environment, verify dependencies, start the server, and open Study Buddy in your browser!
 
-```bash
-# 1. Pull the primary LLM (Llama 3 8B, or lightweight models like phi3 / mistral)
-ollama pull llama3
+### Option B: Manual Command
 
-# 2. Pull the embedding model
-ollama pull nomic-embed-text
-```
-
-> [!TIP]
-> **For low-spec laptops (8GB RAM or CPU only):**  
-> You can use lightweight models like `phi3` or `tinyllama`:
-> ```bash
-> ollama pull phi3
-> ```
-> Then update `LLM_MODEL_NAME=phi3` in your `.env` file.
-
-### 3. Ensure Ollama is Running
-Ollama typically starts automatically as a background service. You can verify it by running:
-```bash
-ollama list
-```
-
----
-
-## ▶️ Running the Application
-
-### 1. Configure `.env` (Optional)
-The application comes preconfigured with sensible defaults in `.env`:
-```ini
-HOST=127.0.0.1
-PORT=8000
-OLLAMA_BASE_URL=http://localhost:11434
-LLM_MODEL_NAME=llama3
-EMBEDDING_MODEL=nomic-embed-text
-DOCUMENTS_DIR=documents
-DATA_DIR=data
-VECTOR_STORE_PATH=data/vector_store.json
-```
-
-### 2. Start the Server
+Start the FastAPI server:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-### 3. Access the Application
-- 🌐 **Web Interface:** Open [http://127.0.0.1:8000](http://127.0.0.1:8000) in your browser.
-- 📚 **Interactive Swagger API Docs:** Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
-- 🩺 **Health Check:** [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health).
+The Web UI & API will be available at:
 
----
-
-## 💻 How to Use the Application
-
-### Option A: Using the Web UI
-1. Navigate to `http://127.0.0.1:8000`.
-2. Under **"1. Upload Study Materials"**, choose a PDF file (e.g. `operating_systems.pdf`) and click **"Upload & Index PDF"**.
-3. Under **"2. Ask a Question"**, type your question (e.g. *"What is deadlock and what are the four conditions?"*).
-4. Click **"Ask Study Buddy"**.
-5. View the synthesized answer along with the source document and page references.
-
-### Option B: Using the REST API
-
-#### 1. Upload a Document
-```bash
-curl -X POST "http://127.0.0.1:8000/documents" \
-     -F "file=@sample_notes.pdf"
-```
-**Response:**
-```json
-{
-  "status": "success",
-  "message": "Successfully processed and indexed 'sample_notes.pdf'.",
-  "filename": "sample_notes.pdf",
-  "pages_parsed": 5,
-  "chunks_stored": 12,
-  "total_indexed_chunks": 12
-}
+```text
+http://127.0.0.1:8000
 ```
 
-#### 2. Query the Knowledge Base
-```bash
-curl -X POST "http://127.0.0.1:8000/chat" \
-     -H "Content-Type: application/json" \
-     -d '{"question": "What is mutual exclusion?"}'
-```
-**Response:**
-```json
-{
-  "answer": "Mutual exclusion is a condition where only one process can hold a resource at any given time...",
-  "sources": [
-    {
-      "document": "sample_notes.pdf",
-      "page": 2,
-      "snippet": "Mutual exclusion ensures that a resource cannot be simultaneously shared...",
-      "relevance_score": 0.8421
-    }
-  ]
-}
+FastAPI's interactive API documentation is available at:
+
+```text
+http://127.0.0.1:8000/docs
 ```
 
 ---
 
-## ❓ Example Questions to Ask
-- *"What is the main difference between a process and a thread?"*
-- *"Explain the four conditions required for deadlock to occur."*
-- *"What are the primary stages of cellular respiration?"*
-- *"Summarize the key takeaways from Chapter 3."*
+# ☁️ Deploying to Vercel (Online Web Access)
+
+Study Buddy comes pre-configured with `vercel.json` and `api/index.py` for one-click serverless deployment:
+
+1. Import this repository into **[Vercel](https://vercel.com)**.
+2. Under Project Settings > **Environment Variables**, add:
+   - `GROQ_API_KEY`: *(Free key from [console.groq.com](https://console.groq.com) for fast Llama 3 cloud inference)*.
+3. Click **Deploy** to get your public web URL!
 
 ---
 
-## 🧪 Running Automated Tests
+# 🧪 Running Automated Tests
 
 Run the test suite using `pytest`:
 
@@ -308,70 +444,243 @@ Run the test suite using `pytest`:
 pytest tests/
 ```
 
-All tests cover:
-- Root frontend delivery and `/health` status
-- Document listing
-- Rejection of invalid non-PDF file formats
-- Rejection of empty/zero-byte files
-- Chat question validation and error handling
-- Page-level text chunking and overlap logic
-- Vector store indexing and cosine similarity retrieval
-- End-to-end PDF ingestion and chat citation
-
 ---
 
-## 📂 Project Structure
+# 📄 Uploading Study Material
+
+Upload a PDF through the document upload endpoint.
+
+Example:
+
+```http
+POST /documents
+```
+
+The application will:
 
 ```text
-study-buddy/
-├── app/
-│   ├── __init__.py
-│   ├── main.py              # FastAPI app initialization, middleware, static files
-│   ├── routes/
-│   │   ├── __init__.py
-│   │   ├── documents.py     # Endpoints for PDF upload and document listing
-│   │   └── chat.py          # Endpoints for asking questions and returning citations
-│   ├── services/
-│   │   ├── __init__.py
-│   │   ├── llm.py           # Local Ollama LLM client with timeout & error handling
-│   │   ├── embeddings.py    # Local open-source embeddings with resilient fallback
-│   │   ├── vector_store.py  # Lightweight local vector store with NumPy cosine similarity
-│   │   └── rag.py           # RAG orchestrator linking retrieval and prompt synthesis
-│   ├── static/
-│   │   └── index.html       # Clean, responsive single-page web interface
-│   └── utils/
-│       ├── __init__.py
-│       └── pdf_loader.py    # PDF text extraction and chunking utilities
-├── data/
-│   └── vector_store.json    # Persistent local storage for text chunks and vector embeddings
-├── documents/               # Saved raw PDF files uploaded by the user
-├── tests/
-│   ├── __init__.py
-│   └── test_main.py         # Automated test cases
-├── requirements.txt         # Minimal, clean project dependencies
-├── .env                     # Local environment settings
-├── .gitignore               # Git ignore rules for virtualenvs and local files
-└── README.md                # Comprehensive documentation
+PDF
+ ↓
+Extract text
+ ↓
+Split into chunks
+ ↓
+Generate embeddings
+ ↓
+Store embeddings
 ```
 
 ---
 
-## 🔒 Why Open-Source & Local AI Was Chosen
+# 💬 Asking Questions
 
-1. **Complete Data Privacy:** Academic materials, unpublished papers, exam questions, and lecture slides remain strictly on the user's device.
-2. **Cost-Free:** No API tokens, credits, or monthly subscriptions.
-3. **Offline Capability:** Once models are downloaded through Ollama, the entire system can function without an internet connection.
-4. **Transparency & Control:** You can inspect the exact chunks stored in `data/vector_store.json`, tune chunk sizes, or swap the LLM with any open model (`llama3`, `mistral`, `gemma`, `phi3`).
+Use:
+
+```http
+POST /chat
+```
+
+Example request:
+
+```json
+{
+  "question": "Explain deadlock in simple terms."
+}
+```
+
+Example response:
+
+```json
+{
+  "answer": "Deadlock occurs when...",
+  "sources": [
+    {
+      "document": "os_notes.pdf"
+    }
+  ]
+}
+```
 
 ---
 
-## ⚠️ Known Limitations
+# 🔐 Why Local & Open AI?
 
-- **Scanned/Image-Only PDFs:** Text extraction requires selectable digital text in the PDF. Pure scanned PDFs (images without OCR) will be detected and rejected with a helpful message.
-- **Hardware Requirements:** Running larger models (e.g. 70B parameters) requires significant RAM and GPU. For typical laptops, 3B–8B parameter models (`phi3`, `llama3:8b`) are recommended.
+One of the main goals of this project is to explore how **open AI technologies can provide practical advantages over closed AI services**.
+
+### Privacy
+
+Study materials may contain personal notes or academic information.
+
+With local inference:
+
+```text
+User Documents
+      ↓
+Local Application
+      ↓
+Local Model
+```
+
+The documents don't need to be uploaded to a third-party AI service.
+
+### Model Flexibility
+
+Because the system uses an open-weight model, the model can potentially be replaced with another compatible model.
+
+```text
+Study Buddy
+     ↓
+Model A
+
+or
+
+Study Buddy
+     ↓
+Model B
+```
+
+### Cost
+
+Local inference does not require paying for an API call for every question, although running models locally still consumes computer resources such as CPU, RAM, and potentially GPU resources.
+
+### Customization
+
+Open models provide more flexibility for experimentation, model selection, and future customization.
 
 ---
 
-## 🎃 Contributing
+# 🎯 Hacktoberfest 2026
 
-Contributions are warmly welcomed for **Hacktoberfest 2026**! Feel free to open issues or submit pull requests for features such as OCR support, additional file formats (Markdown/EPUB), or hybrid search.
+Study Buddy was created as part of **Hacktoberfest 2026's "Build for a Friend" challenge**.
+
+The goal of the challenge is to build something using open-source AI that solves a real problem for a friend or someone you care about.
+
+### The Problem
+
+Students often have large amounts of study material but struggle to quickly find and understand specific information.
+
+### The Solution
+
+Study Buddy allows a student to upload their study material and ask questions about it.
+
+### Why Open Innovation?
+
+The project uses open-weight/local AI so that:
+
+- Study material can remain local.
+- The model can be changed or experimented with.
+- The project does not depend entirely on a closed AI API.
+- The application can work without sending study documents to an external AI provider.
+
+---
+
+# 🧪 Example Use Cases
+
+### 📚 Exam Preparation
+
+> "Explain normalization in DBMS."
+
+### 🧠 Concept Understanding
+
+> "Explain deadlock like I'm a beginner."
+
+### 🔎 Finding Information
+
+> "What are the conditions required for deadlock?"
+
+### 📝 Revision
+
+> "Give me the important topics from this chapter."
+
+---
+
+# 🚧 Current Limitations
+
+This project is currently an MVP.
+
+Possible future improvements include:
+
+- Multiple document collections
+- Conversation history
+- Better source/page tracking
+- Streaming responses
+- User accounts
+- Quiz generation
+- Flashcard generation
+- Voice interaction
+- Better document formats
+- Improved retrieval techniques
+- Model selection from the UI
+- More advanced evaluation of RAG responses
+
+---
+
+# 🔮 Future Improvements
+
+```text
+Current
+  ↓
+PDF → RAG → Local LLM
+  ↓
+Future
+  ├── Quiz Mode
+  ├── Flashcards
+  ├── Study Planner
+  ├── Conversation Memory
+  ├── Voice Input
+  └── Multiple Subject Libraries
+```
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome!
+
+If you'd like to contribute:
+
+```bash
+# Fork the repository
+
+# Clone your fork
+git clone <your-fork-url>
+
+# Create a branch
+git checkout -b feature/my-feature
+
+# Make your changes
+
+# Commit
+git commit -m "Add my feature"
+
+# Push
+git push origin feature/my-feature
+```
+
+Then open a discussion or contribution according to the project's contribution guidelines.
+
+---
+
+# 📜 License
+
+This project is licensed under the **MIT License**.
+
+See the [LICENSE](LICENSE) file for details.
+
+> Note: The MIT License applies to the project's source code. Third-party libraries, models, and other components may have their own licenses and terms.
+
+---
+
+# 👨‍💻 Author
+
+Prabodh Kumar
+
+Built with ❤️ for learning, experimentation, and Hacktoberfest 2026.
+
+---
+
+## ⭐ If You Find This Project Useful
+
+Give the repository a ⭐ on GitHub and feel free to experiment with the project.
+
+---
