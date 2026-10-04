@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Buddy - AI Study Assistant</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --success: #16a34a;
+      --error: #dc2626;
+      --badge-bg: #e0e7ff;
+      --badge-text: #3730a3;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 24px 16px;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    header {
+      text-align: center;
+      padding: 12px 0;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-size: 1rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .card h2 {
+      font-size: 1.25rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Upload Section */
+    .upload-area {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .file-input-wrapper {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    input[type="file"] {
+      padding: 8px 12px;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      background: #fafafa;
+      cursor: pointer;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    button:disabled {
+      background-color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .status-msg {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .status-msg.success {
+      display: block;
+      background-color: #f0fdf4;
+      color: var(--success);
+      border: 1px solid #bbf7d0;
+    }
+
+    .status-msg.error {
+      display: block;
+      background-color: #fef2f2;
+      color: var(--error);
+      border: 1px solid #fecaca;
+    }
+
+    .status-msg.loading {
+      display: block;
+      background-color: #f0f9ff;
+      color: #0284c7;
+      border: 1px solid #bae6fd;
+    }
+
+    .docs-list {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .doc-pill {
+      display: inline-block;
+      background: #f1f5f9;
+      color: #334155;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      margin: 4px 4px 0 0;
+    }
+
+    /* Q&A Section */
+    .chat-area {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      resize: vertical;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: var(--primary);
+    }
+
+    /* Response Section */
+    .response-card {
+      display: none;
+    }
+
+    .answer-box {
+      font-size: 1rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      background: #fafafa;
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 4px solid var(--primary);
+      margin-top: 10px;
+    }
+
+    .sources-list {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .source-item {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+    }
+
+    .source-header {
+      font-weight: 600;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .badge {
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .snippet {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>🎓 Study Buddy</h1>
+      <p>Upload study notes (PDFs) and ask questions powered by your local open-weight LLM.</p>
+    </header>
+
+    <!-- Upload Card -->
+    <section class="card">
+      <h2>📁 1. Upload Study Materials</h2>
+      <div class="upload-area">
+        <div class="file-input-wrapper">
+          <input type="file" id="pdfFileInput" accept=".pdf">
+          <button id="uploadBtn" onclick="uploadPDF()">Upload & Index PDF</button>
+        </div>
+        <div id="uploadStatus" class="status-msg"></div>
+
+        <div class="docs-list" id="docsList">
+          <strong>Available Documents:</strong> <span id="docsCount">Loading...</span>
+          <div id="docsPills"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Query Card -->
+    <section class="card">
+      <h2>💬 2. Ask a Question</h2>
+      <div class="chat-area">
+        <textarea id="questionInput" placeholder="e.g. What is deadlock and what are its necessary conditions?"></textarea>
+        <div>
+          <button id="askBtn" onclick="askQuestion()">Ask Study Buddy</button>
+        </div>
+        <div id="queryStatus" class="status-msg"></div>
+      </div>
+    </section>
+
+    <!-- Answer & Sources Card -->
+    <section class="card response-card" id="responseCard">
+      <h2>💡 Study Buddy's Answer</h2>
+      <div class="answer-box" id="answerBox"></div>
+
+      <div style="margin-top: 16px;">
+        <h3 style="font-size: 1rem; color: #475569;">📑 Referenced Sources</h3>
+        <div class="sources-list" id="sourcesList"></div>
+      </div>
+    </section>
+
+    <footer>
+      Study Buddy &bull; Built for Hacktoberfest 2026 &bull; Powered by Local Open AI & FastAPI
+    </footer>
+  </div>
+
+  <script>
+    // Fetch list of documents on page load
+    window.addEventListener("DOMContentLoaded", fetchDocuments);
+
+    async function fetchDocuments() {
+      try {
+        const res = await fetch("/documents");
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        const countSpan = document.getElementById("docsCount");
+        const pillsDiv = document.getElementById("docsPills");
+        
+        countSpan.textContent = `${data.total_documents} document(s), ${data.total_indexed_chunks} indexed chunk(s)`;
+        pillsDiv.innerHTML = "";
+
+        if (data.documents && data.documents.length > 0) {
+          data.documents.forEach(doc => {
+            const pill = document.createElement("span");
+            pill.className = "doc-pill";
+            pill.textContent = `📄 ${doc.filename}`;
+            pillsDiv.appendChild(pill);
+          });
+        } else {
+          pillsDiv.innerHTML = "<span style='font-style:italic;'>No documents uploaded yet. Please upload one above.</span>";
+        }
+      } catch (err) {
+        console.error("Failed to load documents", err);
+      }
+    }
+
+    async function uploadPDF() {
+      const fileInput = document.getElementById("pdfFileInput");
+      const statusDiv = document.getElementById("uploadStatus");
+      const uploadBtn = document.getElementById("uploadBtn");
+
+      if (!fileInput.files || fileInput.files.length === 0) {
+        showStatus(statusDiv, "Please select a PDF file first.", "error");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      if (!file.name.toLowerCase().endsWith(".pdf")) {
+        showStatus(statusDiv, "Only PDF files are supported.", "error");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      showStatus(statusDiv, "⏳ Uploading, extracting text, and generating vector embeddings...", "loading");
+      uploadBtn.disabled = true;
+
+      try {
+        const response = await fetch("/documents", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          showStatus(
+            statusDiv,
+            `✅ Successfully indexed "${data.filename}" (${data.pages_parsed} pages, ${data.chunks_stored} chunks created)!`,
+            "success"
+          );
+          fileInput.value = "";
+          fetchDocuments();
+        } else {
+          showStatus(statusDiv, `❌ Upload failed: ${data.detail || "Unknown error"}`, "error");
+        }
+      } catch (err) {
+        showStatus(statusDiv, `❌ Network or server error: ${err.message}`, "error");
+      } finally {
+        uploadBtn.disabled = false;
+      }
+    }
+
+    async function askQuestion() {
+      const questionInput = document.getElementById("questionInput");
+      const queryStatus = document.getElementById("queryStatus");
+      const askBtn = document.getElementById("askBtn");
+      const responseCard = document.getElementById("responseCard");
+      const answerBox = document.getElementById("answerBox");
+      const sourcesList = document.getElementById("sourcesList");
+
+      const question = questionInput.value.trim();
+      if (!question) {
+        showStatus(queryStatus, "Please enter a question to ask.", "error");
+        return;
+      }
+
+      showStatus(queryStatus, "🧠 Searching study materials and generating answer via Local LLM...", "loading");
+      askBtn.disabled = true;
+      responseCard.style.display = "none";
+
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: question }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          queryStatus.style.display = "none";
+          responseCard.style.display = "block";
+          answerBox.textContent = data.answer;
+
+          sourcesList.innerHTML = "";
+          if (data.sources && data.sources.length > 0) {
+            data.sources.forEach((src, idx) => {
+              const item = document.createElement("div");
+              item.className = "source-item";
+              item.innerHTML = `
+                <div class="source-header">
+                  <span>📄 ${src.document}</span>
+                  <span class="badge">Page ${src.page}</span>
+                </div>
+                <div class="snippet">"${src.snippet || ''}"</div>
+              `;
+              sourcesList.appendChild(item);
+            });
+          } else {
+            sourcesList.innerHTML = "<span style='color:#64748b; font-style:italic;'>No specific sources cited for this query.</span>";
+          }
+        } else {
+          showStatus(queryStatus, `❌ ${data.detail || "Failed to process query."}`, "error");
+        }
+      } catch (err) {
+        showStatus(queryStatus, `❌ Network or server error: ${err.message}`, "error");
+      } finally {
+        askBtn.disabled = false;
+      }
+    }
+
+    function showStatus(element, message, type) {
+      element.className = `status-msg ${type}`;
+      element.textContent = message;
+      element.style.display = "block";
+    }
+  </script>
+</body>
+</html>
